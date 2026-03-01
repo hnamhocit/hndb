@@ -1,5 +1,3 @@
-import { api } from '@/config'
-import { AxiosError } from 'axios'
 import clsx from 'clsx'
 import {
 	ArrowDownToLineIcon,
@@ -13,7 +11,9 @@ import {
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { api } from '@/config'
 import { useDataSourcesStore, useTabsStore } from '@/stores'
+import { notifyError } from '@/utils'
 import QueryTable from '../QueryTable'
 import { Button } from '../ui/button'
 import ExecutionLog from './ExecutionLog'
@@ -65,17 +65,7 @@ const QueryBuilder = () => {
 
 			setResult(data.data)
 		} catch (error) {
-			if (error instanceof AxiosError) {
-				if ('error' in error.response?.data) {
-					toast.error(error.response?.data.error, {
-						position: 'top-center',
-					})
-				}
-
-				return
-			}
-
-			toast.error('Failed to run query', { position: 'top-center' })
+			notifyError(error, 'Failed to run query')
 		} finally {
 			setIsLoading(false)
 		}

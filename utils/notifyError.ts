@@ -10,5 +10,5 @@ export const notifyError = (error: unknown, fallbackMessage: string) => {
 		return
 	}
 
-	toast.error(fallbackMessage)
+	toast.error(fallbackMessage, { position: 'top-center' })
 }

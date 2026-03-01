@@ -1,7 +1,3 @@
-import { api } from '@/config'
-import { IRelationship } from '@/interfaces'
-import { useDataSourcesStore } from '@/stores'
-import { getLayoutedElements } from '@/utils'
 import {
 	Background,
 	Controls,
@@ -12,9 +8,12 @@ import {
 	useNodesState,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { AxiosError } from 'axios'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
+
+import { api } from '@/config'
+import { IRelationship } from '@/interfaces'
+import { useDataSourcesStore } from '@/stores'
+import { getLayoutedElements, notifyError } from '@/utils'
 import TableNode from './TableNode'
 
 const nodeTypes = { tableNode: TableNode }
@@ -37,15 +36,7 @@ const ERDiagram = () => {
 				)
 				setRelationships(response.data.data)
 			} catch (error) {
-				if (error instanceof AxiosError) {
-					if ('error' in error.response?.data) {
-						toast.error(error.response?.data.error, {
-							position: 'top-center',
-						})
-					}
-					return
-				}
-				toast.error('Failed to fetch relationships.')
+				notifyError(error, 'Failed to fetch relationships.')
 			} finally {
 				setIsLoading(false)
 			}
@@ -110,10 +101,9 @@ const ERDiagram = () => {
 		setEdges(layoutedEdges)
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [schema, relationships, currentTable]) // Nhớ thêm currentTable vào dependencies
+	}, [schema, relationships, currentTable])
 
-	// (Tùy chọn) Có thể thêm màn hình Loading nhỏ ở đây
-	// if (isLoading) return <div>Đang tính toán sơ đồ...</div>
+	if (isLoading) return <div>Calculating schema</div>
 
 	return (
 		<div className='w-full h-full min-h-[calc(100vh-100px)] bg-slate-50 dark:bg-[#090b10] transition-colors duration-300'>
