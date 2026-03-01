@@ -1,4 +1,6 @@
 export * from './formatDataSize'
+export * from './getDbPath'
 export * from './getLayoutedElements'
+export * from './notifyError'
 export * from './sqlTypesIcon'
 export * from './supabase'

@@ -1,6 +1,5 @@
 import { DatabaseIcon, DatabaseZapIcon } from 'lucide-react'
 import { useEffect } from 'react'
-import { toast } from 'sonner'
 
 import {
 	Accordion,
@@ -10,7 +9,7 @@ import {
 } from '@/components/ui/accordion'
 import { api } from '@/config'
 import { useDataSourcesStore } from '@/stores'
-import { AxiosError } from 'axios'
+import { notifyError } from '@/utils'
 import Tables from './Tables'
 
 const Databases = () => {
@@ -38,17 +37,7 @@ const Databases = () => {
 				)
 				setDatabases(data.data)
 			} catch (error) {
-				if (error instanceof AxiosError) {
-					if ('error' in error.response?.data) {
-						toast.error(error.response?.data.error, {
-							position: 'top-center',
-						})
-					}
-
-					return
-				}
-
-				toast.error('Failed to fetch databases.')
+				notifyError(error, 'Failed to fetch databases.')
 			} finally {
 				setIsDatabaseLoading(false)
 			}
@@ -66,19 +55,10 @@ const Databases = () => {
 				const { data } = await api.get(
 					`/data_sources/${selectedId}/databases/${currentDatabase}/schema`,
 				)
+
 				setSchema(data.data)
 			} catch (error) {
-				if (error instanceof AxiosError) {
-					if ('error' in error.response?.data) {
-						toast.error(error.response?.data.error, {
-							position: 'top-center',
-						})
-					}
-
-					return
-				}
-
-				toast.error('Failed to fetch schema.')
+				notifyError(error, 'Failed to fetch schema.')
 			} finally {
 				setIsSchemaLoading(false)
 			}

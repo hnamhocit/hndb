@@ -64,6 +64,7 @@ export const useDataSourcesStore = create<DataSourcesStore>()(
 				selectedId: state.selectedId,
 				currentDatabase: state.currentDatabase,
 				currentTable: state.currentTable,
+				schema: state.schema,
 			}),
 		},
 	),

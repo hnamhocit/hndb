@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { BoxesIcon, GroupIcon, TableIcon } from 'lucide-react'
 import { useState } from 'react'
+
 import Data from './Data'
 import ERDiagram from './ERDiagram'
 import Structure from './Structure'

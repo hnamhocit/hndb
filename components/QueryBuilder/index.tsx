@@ -10,12 +10,14 @@ import {
 	TimerIcon,
 	WandSparklesIcon,
 } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { useDataSourcesStore, useTabsStore } from '@/stores'
-import { useState } from 'react'
-import Table from '../Table'
+import QueryTable from '../QueryTable'
 import { Button } from '../ui/button'
+import ExecutionLog from './ExecutionLog'
+import QueryPlan from './QueryPlan'
 import SQLEditor from './SQLEditor'
 
 const tabs = [
@@ -124,17 +126,18 @@ const QueryBuilder = () => {
 
 			{result && (
 				<>
-					<div className='flex items-center justify-between py-2 px-4'>
+					{/* Thanh Tabs & Stats (Đã thêm border-b để tách biệt với nội dung bên dưới) */}
+					<div className='flex items-center justify-between pt-2 px-4 shrink-0 border-b dark:border-slate-800'>
 						<div className='flex items-center gap-4'>
 							{tabs.map((tab) => (
 								<div
 									key={tab.id}
 									className={clsx(
-										'py-2 px-4 cursor-pointer',
+										'py-2 px-4 cursor-pointer transition-colors',
 										{
 											'border-b-2 border-primary text-primary font-bold':
 												currentTab === tab.id,
-											'text-neutral-600 hover:text-neutral-800 font-semibold':
+											'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 font-semibold':
 												currentTab !== tab.id,
 										},
 									)}
@@ -144,33 +147,48 @@ const QueryBuilder = () => {
 							))}
 						</div>
 
-						<div className='flex items-center gap-4 text-neutral-700 dark:text-neutral-700 font-mono font-medium'>
-							<div className='flex items-center gap-2'>
-								<TimerIcon />
-								<div>
-									{result.durationMs?.toFixed(2) || 0}ms
+						{/* Stats chỉ hiện ở tab Results */}
+						{currentTab === 'results' && (
+							<div className='flex items-center gap-4 text-neutral-700 dark:text-neutral-400 font-mono font-medium text-sm'>
+								<div className='flex items-center gap-2'>
+									<TimerIcon size={16} />
+									<div>
+										{result.durationMs?.toFixed(2) || 0}ms
+									</div>
+								</div>
+								<div className='flex items-center gap-2'>
+									<DatabaseIcon size={16} />
+									<div>{result.rows.length || 0} rows</div>
+								</div>
+								<div className='w-0.5 h-4 bg-neutral-300 dark:bg-neutral-700'></div>
+								<div className='flex items-center gap-2 cursor-pointer hover:text-primary transition-colors'>
+									<ArrowDownToLineIcon size={16} />
+									<div>CSV</div>
 								</div>
 							</div>
-
-							<div className='flex items-center gap-2'>
-								<DatabaseIcon />
-
-								<div>{result.rows.length || 0} rows</div>
-							</div>
-
-							<div className='w-0.5 h-6 bg-neutral-400'></div>
-
-							<div className='flex items-center gap-2'>
-								<ArrowDownToLineIcon />
-								<div>CSV</div>
-							</div>
-						</div>
+						)}
 					</div>
 
-					<Table
-						columns={Object.keys(result.rows[0] || [])}
-						rows={result.rows || []}
-					/>
+					{/* Khu vực Render Nội dung theo Tab */}
+					<div className='flex-1 overflow-hidden bg-white dark:bg-[#090b10] relative'>
+						{currentTab === 'results' && (
+							<QueryTable
+								columns={Object.keys(result.rows[0] || [])}
+								rows={result.rows || []}
+							/>
+						)}
+
+						{currentTab === 'execution-log' && (
+							<ExecutionLog
+								result={result}
+								query={contentById[activeTab.id]}
+							/>
+						)}
+
+						{currentTab === 'query-plan' && (
+							<QueryPlan query={contentById[activeTab.id]} />
+						)}
+					</div>
 				</>
 			)}
 		</div>
