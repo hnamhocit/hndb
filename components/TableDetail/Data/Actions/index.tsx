@@ -24,13 +24,16 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { api } from '@/config'
+import { IColumn } from '@/interfaces'
 import { useDataSourcesStore } from '@/stores'
 import { notifyError } from '@/utils'
+import RecordModal from './RecordModal'
 
 interface ActionsProps {
 	keys: (string | number)[]
 	setKeys: Dispatch<SetStateAction<(string | number)[]>>
 	refreshData: () => Promise<void>
+	columns: IColumn[]
 	primaryColumnName: string
 }
 
@@ -39,9 +42,13 @@ const Actions = ({
 	setKeys,
 	refreshData,
 	primaryColumnName,
+	columns,
 }: ActionsProps) => {
 	const [isDeleting, setIsDeleting] = useState(false)
+	const [isOpen, setIsOpen] = useState(false)
 	const { currentDatabase, currentTable, selectedId } = useDataSourcesStore()
+
+	const toggleIsOpen = () => setIsOpen((prev) => !prev)
 
 	const handleDelete = async () => {
 		const selectedKeys = keys
@@ -76,10 +83,20 @@ const Actions = ({
 		<div className='flex items-center justify-between p-4 border-b'>
 			<div className='flex items-center gap-3'>
 				<Button
+					onClick={toggleIsOpen}
 					size='icon'
 					variant='ghost'>
 					<PlusIcon />
 				</Button>
+
+				<RecordModal
+					isOpen={isOpen}
+					onOpenChange={toggleIsOpen}
+					columns={columns}
+					onSubmit={(sql) => {
+						console.log({ sql })
+					}}
+				/>
 
 				<Button
 					size='icon'

@@ -9,7 +9,7 @@ interface QueryTableProps {
 
 const QueryTable = ({ columns, rows }: QueryTableProps) => {
 	return (
-		<div className='flex-1 overflow-auto min-h-0'>
+		<div className='w-full h-full overflow-auto'>
 			<table className='w-full border-collapse whitespace-nowrap'>
 				<thead>
 					<tr>

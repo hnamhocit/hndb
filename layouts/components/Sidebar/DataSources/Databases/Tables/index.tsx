@@ -26,6 +26,10 @@ const Tables = ({ database }: TablesProps) => {
 					<div className='text-center text-gray-500'>
 						Loading tables...
 					</div>
+				: !schema ?
+					<div className='text-center text-gray-500'>
+						No schema data.
+					</div>
 				: schema && Object.keys(schema).length === 0 ?
 					<div className='text-center text-gray-500'>
 						No tables found.

@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 
 import { api } from '@/config'
 import { useDataSourcesStore, useTabsStore } from '@/stores'
-import { notifyError } from '@/utils'
+import { exportToCsv, notifyError } from '@/utils'
 import QueryTable from '../QueryTable'
 import { Button } from '../ui/button'
 import ExecutionLog from './ExecutionLog'
@@ -146,12 +146,28 @@ const QueryBuilder = () => {
 										{result.durationMs?.toFixed(2) || 0}ms
 									</div>
 								</div>
+
 								<div className='flex items-center gap-2'>
 									<DatabaseIcon size={16} />
 									<div>{result.rows.length || 0} rows</div>
 								</div>
+
 								<div className='w-0.5 h-4 bg-neutral-300 dark:bg-neutral-700'></div>
-								<div className='flex items-center gap-2 cursor-pointer hover:text-primary transition-colors'>
+
+								<div
+									className='flex items-center gap-2 cursor-pointer hover:text-primary transition-colors'
+									onClick={() => {
+										const timestamp = new Date()
+											.toISOString()
+											.replace(/[:.]/g, '-')
+										exportToCsv(
+											`query-result-${timestamp}`,
+											result.rows as Record<
+												string,
+												unknown
+											>[],
+										)
+									}}>
 									<ArrowDownToLineIcon size={16} />
 									<div>CSV</div>
 								</div>

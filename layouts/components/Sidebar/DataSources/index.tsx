@@ -58,8 +58,8 @@ const DataSources = () => {
 				return (
 					<AccordionItem
 						className='px-4'
-						value={ds.type}
-						key={ds.type}>
+						value={ds.id}
+						key={ds.id}>
 						<AccordionTrigger onClick={() => setSelectedId(ds.id)}>
 							<div className='flex items-center gap-4'>
 								<Image

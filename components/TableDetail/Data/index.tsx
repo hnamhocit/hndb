@@ -1,5 +1,5 @@
 import { CheckCircle2Icon, HardDriveIcon, KeyboardIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import DatabaseTable from '@/components/DatabaseTable'
 import { api } from '@/config'
@@ -17,9 +17,10 @@ const Data = () => {
 	const [keys, setKeys] = useState<(string | number)[]>([])
 
 	const columns = schema[currentTable || ''] || []
-	const primaryColumnName = columns.find((col) => col.is_primary)!.column_name
+	const primaryColumnName =
+		columns.find((col) => col.is_primary)?.column_name || 'id'
 
-	const refreshData = async () => {
+	const refreshData = useCallback(async () => {
 		if (!activeTab || !currentDatabase || !currentTable || !selectedId)
 			return
 
@@ -36,11 +37,11 @@ const Data = () => {
 		} finally {
 			setIsLoading(false)
 		}
-	}
+	}, [activeTab, currentDatabase, currentTable, selectedId])
 
 	useEffect(() => {
 		refreshData()
-	}, [])
+	}, [refreshData])
 
 	return (
 		<>
@@ -49,6 +50,7 @@ const Data = () => {
 				setKeys={setKeys}
 				refreshData={refreshData}
 				primaryColumnName={primaryColumnName}
+				columns={columns}
 			/>
 
 			{isLoading ?
