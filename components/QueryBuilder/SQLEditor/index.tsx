@@ -10,9 +10,7 @@ export default function SQLEditor() {
 	const value = contentById[activeTab!.id] || ''
 
 	const cacheKey = `${activeTab!.dataSourceId}-${activeTab!.database}`
-	console.log({ cacheKey })
 	const schema = cachedSchema[cacheKey] || {}
-	console.log({ schema })
 
 	const derivedSchema = Object.entries(schema).reduce(
 		(acc, [table, columns]) => {

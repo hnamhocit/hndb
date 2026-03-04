@@ -8,51 +8,23 @@ import {
 	useNodesState,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { useEffect, useState } from 'react' // Đã bỏ useRef
+import { useEffect } from 'react' // Đã bỏ useRef
 
-import { api } from '@/config'
+import { useRelationships, useSchema } from '@/hooks'
 import { IRelationship } from '@/interfaces'
-import { useDataSourcesStore, useTabsStore } from '@/stores'
-import { getDbPath, getLayoutedElements, notifyError } from '@/utils'
+import { useTabsStore } from '@/stores'
+import { getLayoutedElements } from '@/utils'
 import TableNode from './TableNode'
 
 const nodeTypes = { tableNode: TableNode }
 
 const ERDiagram = () => {
-	const { cachedSchema, cachedRelationships, setCachedRelationships } =
-		useDataSourcesStore()
-	const { activeTab } = useTabsStore()
 	const [nodes, setNodes, onNodesChange] = useNodesState([])
 	const [edges, setEdges, onEdgesChange] = useEdgesState([])
-	const [isLoading, setIsLoading] = useState(false)
 
-	const schemaCacheKey = `${activeTab!.dataSourceId}-${activeTab!.database}`
-	const schema = cachedSchema[schemaCacheKey] || {}
-
-	const relationshipsCacheKey = `${schemaCacheKey}-${activeTab!.table}`
-	const cachedRels = cachedRelationships[relationshipsCacheKey]
-
-	// 2. Fetch Relationships API (Đã bỏ fetchLock)
-	useEffect(() => {
-		// Nếu đã có cache cho bảng này thì quay xe
-		if (cachedRels !== undefined) return
-
-		const fetchRels = async () => {
-			setIsLoading(true)
-
-			try {
-				const { data } = await api.get(getDbPath('relationships'))
-				// Lưu vào Store với Key chứa tên bảng
-				setCachedRelationships(relationshipsCacheKey, data.data || [])
-			} catch (error) {
-				notifyError(error, 'Failed to fetch relationships.')
-			} finally {
-				setIsLoading(false)
-			}
-		}
-
-		fetchRels()
-	}, [activeTab, cachedRels, relationshipsCacheKey, setCachedRelationships])
+	const { activeTab } = useTabsStore()
+	const { relationships, hasRelationships, isLoading } = useRelationships()
+	const { schema } = useSchema()
 
 	// 3. Map dữ liệu sang Nodes và Edges
 	useEffect(() => {
@@ -60,7 +32,7 @@ const ERDiagram = () => {
 			!schema ||
 			Object.keys(schema).length === 0 ||
 			!activeTab?.table ||
-			!cachedRels
+			!hasRelationships
 		)
 			return
 
@@ -70,7 +42,7 @@ const ERDiagram = () => {
 		relevantTables.add(currentTable)
 
 		// Dùng cachedRels thay vì state relationships cũ
-		const relevantRelationships = cachedRels.filter(
+		const relevantRelationships = relationships.filter(
 			(rel: IRelationship) =>
 				rel.source_table === currentTable ||
 				rel.target_table === currentTable,
@@ -111,9 +83,16 @@ const ERDiagram = () => {
 
 		setNodes(layoutedNodes as never[])
 		setEdges(layoutedEdges as never[])
-	}, [schema, cachedRels, activeTab?.table, setNodes, setEdges])
+	}, [
+		schema,
+		relationships,
+		hasRelationships,
+		activeTab?.table,
+		setNodes,
+		setEdges,
+	])
 
-	if (isLoading && !cachedRels)
+	if (isLoading && !hasRelationships)
 		return (
 			<div className='w-full h-full min-h-[calc(100vh-100px)] flex items-center justify-center text-neutral-500'>
 				Calculating schema...

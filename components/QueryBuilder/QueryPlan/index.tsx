@@ -2,7 +2,7 @@ import { ActivityIcon, AlertCircleIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { api } from '@/config'
-import { getDbPath, notifyError } from '@/utils'
+import { getTablePath, notifyError } from '@/utils'
 import JsonViewer from './JsonViewer'
 
 interface QueryPlanProps {
@@ -20,7 +20,7 @@ const QueryPlan = ({ query }: QueryPlanProps) => {
 			setPlanData(null)
 
 			try {
-				const { data } = await api.post(getDbPath(`query/plan`), {
+				const { data } = await api.post(getTablePath(`query/plan`), {
 					query,
 				})
 

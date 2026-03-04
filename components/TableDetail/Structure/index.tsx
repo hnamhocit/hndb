@@ -10,7 +10,7 @@ const TableStructure = () => {
 	const columns = cachedSchema[cachedKey]?.[activeTab?.table || ''] || []
 
 	return (
-		<div className='w-full p-6 min-h-screen transition-colors duration-300'>
+		<div className='w-full p-6 min-h-screen overflow-auto transition-colors duration-300'>
 			<div className='w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a1d27] overflow-hidden shadow-sm dark:shadow-2xl transition-colors duration-300'>
 				<table className='w-full text-left border-collapse whitespace-nowrap'>
 					{/* Header */}

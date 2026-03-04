@@ -1,3 +1,4 @@
+export * from './dataEditor.store'
 export * from './datasources.store'
 export * from './tabs.store'
 export * from './user.store'

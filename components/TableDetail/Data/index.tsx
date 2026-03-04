@@ -3,23 +3,21 @@ import { useCallback, useEffect, useState } from 'react'
 
 import DatabaseTable from '@/components/DatabaseTable'
 import { api } from '@/config'
+import { useSchema } from '@/hooks'
 import { IQueryResult } from '@/interfaces'
-import { useTabsStore } from '@/stores'
-import { useDataSourcesStore } from '@/stores/datasources.store'
-import { formatDataSize, notifyError } from '@/utils'
+import { useDataEditorStore, useTabsStore } from '@/stores'
+import { formatDataSize, getTablePath, notifyError } from '@/utils'
 import Actions from './Actions'
 
 const Data = () => {
 	const { activeTab } = useTabsStore()
-	const { cachedSchema, setCachedSchema } = useDataSourcesStore()
 	const [result, setResult] = useState<IQueryResult | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
-	const [keys, setKeys] = useState<(string | number)[]>([])
+	const { schema, hasCachedSchema } = useSchema()
+	const { initializeTable, discardTableChanges } = useDataEditorStore()
+	const tablePath = getTablePath()
 
-	const cachedKey = `${activeTab?.dataSourceId}-${activeTab?.database}`
-	const hasCachedSchema = !!cachedSchema[cachedKey]
-
-	const columns = cachedSchema[cachedKey]?.[activeTab?.table || ''] || []
+	const columns = schema?.[activeTab?.table || ''] || []
 	const primaryColumnName =
 		columns.find((col) => col.is_primary)?.column_name || 'id'
 
@@ -29,50 +27,33 @@ const Data = () => {
 		setIsLoading(true)
 
 		try {
-			const { data } = await api.get(
-				`/data_sources/${activeTab.dataSourceId}/databases/${activeTab.database}/tables/${activeTab.table}/preview`,
-			)
+			const { data } = await api.get(getTablePath('preview'))
 
 			setResult(data.data)
+			discardTableChanges(tablePath)
+			initializeTable(tablePath, data.data.rows || [])
 		} catch (error) {
 			notifyError(error, 'Failed to fetch table preview.')
 		} finally {
 			setIsLoading(false)
 		}
-	}, [activeTab, hasCachedSchema])
+	}, [
+		activeTab,
+		hasCachedSchema,
+		initializeTable,
+		tablePath,
+		discardTableChanges,
+	])
 
 	useEffect(() => {
 		refreshData()
 	}, [refreshData])
 
-	useEffect(() => {
-		const getSchema = async () => {
-			if (!activeTab) return
-
-			try {
-				const { data } = await api.get(
-					`/data_sources/${activeTab.dataSourceId}/databases/${activeTab.database}/schema`,
-				)
-
-				setCachedSchema(cachedKey, data.data)
-			} catch (error) {
-				notifyError(error, 'Failed to fetch schema.')
-			}
-		}
-
-		if (!hasCachedSchema) {
-			getSchema()
-		}
-	}, [activeTab, hasCachedSchema, cachedKey])
-
 	return (
 		<>
 			<Actions
-				keys={keys}
-				setKeys={setKeys}
 				refreshData={refreshData}
 				primaryColumnName={primaryColumnName}
-				columns={columns}
 			/>
 
 			{isLoading ?
@@ -83,13 +64,13 @@ const Data = () => {
 					/>
 					<span>Loading data...</span>
 				</div>
-			:	<DatabaseTable
-					columns={columns}
-					rows={result?.rows || []}
-					keys={keys}
-					setKeys={setKeys}
-					primaryColumnName={primaryColumnName}
-				/>
+			:	result && (
+					<DatabaseTable
+						columns={columns}
+						initialData={result?.rows || []}
+						primaryColumnName={primaryColumnName}
+					/>
+				)
 			}
 
 			{result && !isLoading && (
