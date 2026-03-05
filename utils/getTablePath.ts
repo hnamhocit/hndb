@@ -1,8 +1,13 @@
-import { useDataSourcesStore } from '@/stores'
+import { useTabsStore } from '@/stores'
 
 export const getTablePath = (path?: string) => {
-	const state = useDataSourcesStore.getState()
-	const { database, dataSourceId, table } = state
+	const { activeTab } = useTabsStore.getState()
+
+	if (!activeTab) {
+		throw new Error('No active tab found')
+	}
+
+	const { database, dataSourceId, table } = activeTab
 
 	let tablePath = `/data_sources/${dataSourceId}/databases/${database}/tables/${table}`
 

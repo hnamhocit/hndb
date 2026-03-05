@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { DatabaseIcon, DatabaseZapIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -16,8 +17,13 @@ const Databases = () => {
 	const [isLoading, setIsLoading] = useState(false)
 	const fetchLock = useRef<string | null>(null)
 
-	const { cachedDatabases, setCachedDatabases, dataSourceId, setDatabase } =
-		useDataSourcesStore()
+	const {
+		cachedDatabases,
+		setCachedDatabases,
+		dataSourceId,
+		setDatabase,
+		database,
+	} = useDataSourcesStore()
 
 	const hasCachedData = !!(dataSourceId && cachedDatabases[dataSourceId])
 
@@ -46,7 +52,7 @@ const Databases = () => {
 
 			fetchDatabases()
 		})()
-	}, [dataSourceId, hasCachedData])
+	}, [dataSourceId, hasCachedData, setCachedDatabases])
 
 	return (
 		<AccordionContent>
@@ -61,21 +67,27 @@ const Databases = () => {
 						<div className='text-center text-gray-500'>
 							No databases found.
 						</div>
-					:	cachedDatabases[dataSourceId!]?.map((database) => (
+					:	cachedDatabases[dataSourceId!]?.map((db) => (
 							<AccordionItem
-								value={database}
-								key={database}>
+								value={db}
+								key={db}>
 								<AccordionTrigger
-									onClick={() => setDatabase(database)}>
-									<div className='flex items-center gap-4 font-mono text-lg font-medium'>
-										{database === database ?
-											<DatabaseZapIcon />
-										:	<DatabaseIcon />}
-										{database}
+									onClick={() => setDatabase(db)}>
+									<div
+										className={clsx(
+											'flex items-center gap-4 font-mono text-lg font-medium',
+											database === db ? 'text-primary' : (
+												'text-gray-700 dark:text-gray-500'
+											),
+										)}>
+										{database === db ?
+											<DatabaseZapIcon size={18} />
+										:	<DatabaseIcon size={18} />}
+										{db}
 									</div>
 								</AccordionTrigger>
 
-								<Tables database={database} />
+								<Tables database={db} />
 							</AccordionItem>
 						))
 					}

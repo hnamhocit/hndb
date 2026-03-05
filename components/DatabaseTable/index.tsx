@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import clsx from 'clsx'
-import React, { useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 
 import { IColumn } from '@/interfaces'
 import { useDataEditorStore } from '@/stores'
@@ -23,115 +23,107 @@ interface DatabaseTableProps {
 // -------------------------------------------------------------------------
 // OPTIMIZATION 1: Cell Wrapper tự động kết nối Zustand
 // -------------------------------------------------------------------------
-const CellWrapper = React.memo(
-	({
-		rowId,
-		column,
-		initialValue,
-		tablePath,
-		color,
-		isNewRow,
-	}: {
-		rowId: string
-		column: IColumn
-		initialValue: unknown
-		tablePath: string
-		color: string
-		isNewRow: boolean
-	}) => {
-		const isChanged = useDataEditorStore((state) => {
-			const table = state.tablesState[tablePath]
-			if (!table) return false
-			const rowChanges =
-				table.updateChangeset[rowId] || table.insertChangeset[rowId]
-			return !!(
-				rowChanges &&
-				Object.prototype.hasOwnProperty.call(
-					rowChanges,
-					column.column_name,
-				)
-			)
-		})
-
-		const isDeleted = useDataEditorStore(
-			(state) => !!state.tablesState[tablePath]?.deleteChangeset?.[rowId],
+const CellWrapper = ({
+	rowId,
+	column,
+	initialValue,
+	tablePath,
+	color,
+	isNewRow,
+}: {
+	rowId: string
+	column: IColumn
+	initialValue: unknown
+	tablePath: string
+	color: string
+	isNewRow: boolean
+}) => {
+	const isChanged = useDataEditorStore((state) => {
+		const table = state.tablesState[tablePath]
+		if (!table) return false
+		const rowChanges =
+			table.updateChangeset[rowId] || table.insertChangeset[rowId]
+		return !!(
+			rowChanges &&
+			Object.prototype.hasOwnProperty.call(rowChanges, column.column_name)
 		)
+	})
 
-		const trackUpdate = useDataEditorStore((state) => state.trackUpdate)
+	const isDeleted = useDataEditorStore(
+		(state) => !!state.tablesState[tablePath]?.deleteChangeset?.[rowId],
+	)
 
-		return (
-			<div className={clsx('w-full h-full', color)}>
-				<EditableCell
-					initialValue={initialValue}
-					column={column}
-					isChanged={isChanged}
-					isNewRow={isNewRow}
-					isDeleted={isDeleted}
-					onSave={(cName, nVal) =>
-						trackUpdate(tablePath, rowId, cName, nVal)
-					}
-				/>
-			</div>
-		)
-	},
-)
+	const trackUpdate = useDataEditorStore((state) => state.trackUpdate)
+
+	return (
+		<div className={clsx('w-full h-full', color)}>
+			<EditableCell
+				initialValue={initialValue}
+				column={column}
+				isChanged={isChanged}
+				isNewRow={isNewRow}
+				isDeleted={isDeleted}
+				onSave={(cName, nVal) =>
+					trackUpdate(tablePath, rowId, cName, nVal)
+				}
+			/>
+		</div>
+	)
+}
 
 // -------------------------------------------------------------------------
 // OPTIMIZATION 2: Selection Cell (Checkbox kế bên Index, hiện khi Hover)
 // -------------------------------------------------------------------------
-const SelectionCell = React.memo(
-	({ rowId, index, tablePath, isDeleted }: any) => {
-		const isSelected = useDataEditorStore(
-			(state) => !!state.tablesState[tablePath]?.selectedRows?.[rowId],
-		)
-		const toggleRowSelection = useDataEditorStore(
-			(state) => state.toggleRowSelection,
-		)
+const SelectionCell = ({ rowId, index, tablePath, isDeleted }: any) => {
+	const isSelected = useDataEditorStore(
+		(state) => !!state.tablesState[tablePath]?.selectedRows?.[rowId],
+	)
+	const toggleRowSelection = useDataEditorStore(
+		(state) => state.toggleRowSelection,
+	)
 
-		return (
-			<div
-				className={clsx(
-					'flex items-center justify-center w-full h-full min-h-[44px] transition-colors',
-					isSelected && !isDeleted ? 'bg-primary/10' : '',
-				)}>
-				<div className='flex items-center justify-center gap-2 px-2 w-full'>
-					{/* 💡 NÚT CHECKBOX: Mặc định tàng hình (opacity-0).
+	return (
+		<div
+			className={clsx(
+				'flex items-center justify-center w-full h-full min-h-[44px] transition-colors',
+				isSelected && !isDeleted ? 'bg-primary/10' : '',
+			)}>
+			<div className='flex items-center justify-center gap-2 px-2 w-full'>
+				{/* 💡 NÚT CHECKBOX: Mặc định tàng hình (opacity-0).
                     Chỉ hiện lên (opacity-100) khi:
                     1. Người dùng hover vào bất kỳ đâu trên dòng này (group-hover)
                     2. Hoặc Checkbox này đang được tick chọn (isSelected)
                     3. Hoặc dòng này đã bị bấm xóa (isDeleted)
                 */}
-					<div
-						className={clsx(
-							'transition-opacity duration-200 flex shrink-0 items-center',
-							isSelected || isDeleted ? 'opacity-100' : (
-								'opacity-0 group-hover:opacity-100'
-							),
-						)}>
-						<Checkbox
-							checked={isSelected}
-							disabled={isDeleted}
-							onCheckedChange={() =>
-								!isDeleted &&
-								toggleRowSelection(tablePath, rowId)
-							}
-							className='bg-white'
-						/>
-					</div>
-
-					{/* SỐ THỨ TỰ INDEX */}
-					<span
-						className={clsx(
-							'text-right min-w-[1.2rem]',
-							isDeleted ? 'text-neutral-400' : 'text-neutral-500',
-						)}>
-						{index + 1}
-					</span>
+				<div
+					className={clsx(
+						'transition-opacity duration-200 flex shrink-0 items-center',
+						isSelected || isDeleted ? 'opacity-100' : (
+							'opacity-0 group-hover:opacity-100'
+						),
+					)}>
+					<Checkbox
+						checked={isSelected}
+						disabled={isDeleted}
+						onCheckedChange={() =>
+							!isDeleted && toggleRowSelection(tablePath, rowId)
+						}
+						className='bg-white'
+					/>
 				</div>
+
+				{/* SỐ THỨ TỰ INDEX */}
+				<span
+					className={clsx(
+						'text-right min-w-[1.2rem]',
+						isDeleted ? 'text-neutral-400' : 'text-neutral-500',
+					)}>
+					{index + 1}
+				</span>
 			</div>
-		)
-	},
-)
+		</div>
+	)
+}
 
 // -------------------------------------------------------------------------
 // MAIN COMPONENT
@@ -269,12 +261,12 @@ const DatabaseTable = ({
 				<thead>
 					{table.getHeaderGroups().map((headerGroup) => (
 						<tr key={headerGroup.id}>
-							{headerGroup.headers.map((header, index) => (
+							{headerGroup.headers.map((header) => (
 								<th
 									key={header.id}
 									className={clsx(
 										'border p-2 select-none sticky top-0 z-20',
-										index !== 0 &&
+										header.index !== 0 &&
 											'bg-primary text-primary-foreground',
 									)}>
 									{header.isPlaceholder ? null : (

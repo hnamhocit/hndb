@@ -5,13 +5,7 @@ import { useDataSourcesStore, useTabsStore } from '@/stores'
 import Tab from './Tab'
 
 const Tabs = () => {
-	const {
-		tabs,
-		setTabs,
-
-		setActiveTab,
-		commitContent,
-	} = useTabsStore()
+	const { tabs, setTabs, setActiveTab, commitContent } = useTabsStore()
 	const { dataSourceId, database, table } = useDataSourcesStore()
 
 	const handleNewQueryTab = () => {

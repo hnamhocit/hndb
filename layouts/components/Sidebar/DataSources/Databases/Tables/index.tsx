@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { CornerDownLeftIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { AccordionContent } from '@/components/ui/accordion'
@@ -7,6 +6,7 @@ import { api } from '@/config'
 import { ITab } from '@/interfaces'
 import { useDataSourcesStore, useTabsStore } from '@/stores'
 import { notifyError } from '@/utils'
+import { CornerDownLeftIcon, Table2Icon } from 'lucide-react'
 
 interface TablesProps {
 	database: string
@@ -48,7 +48,14 @@ const Tables = ({ database }: TablesProps) => {
 		}
 
 		fetchSchema()
-	}, [dataSourceId, database, isAccordionOpen, hasCachedData, cacheKey])
+	}, [
+		dataSourceId,
+		database,
+		isAccordionOpen,
+		hasCachedData,
+		cacheKey,
+		setCachedSchema,
+	])
 
 	const tableList =
 		cachedSchema[cacheKey] ? Object.keys(cachedSchema[cacheKey]) : []
@@ -68,7 +75,7 @@ const Tables = ({ database }: TablesProps) => {
 						onClick={(e) => {
 							e.stopPropagation()
 
-							const id = `${database}-${t}`
+							const id = `${dataSourceId}-${database}-${t}`
 							const newTab: ITab = {
 								id,
 								type: 'table',
@@ -87,14 +94,25 @@ const Tables = ({ database }: TablesProps) => {
 						}}
 						key={t}
 						className={clsx(
-							'select-none flex items-center justify-between gap-4 py-2 px-4 hover:text-primary transition-colors duration-300 cursor-pointer font-mono text-lg',
+							// Base classes
+							'relative select-none flex items-center justify-between gap-4 py-2 px-4 transition-all duration-200 cursor-pointer font-mono text-base',
+							// Active vs Inactive classes
 							table === t && globalActiveDatabase === database ?
-								'text-primary'
-							:	'text-gray-500',
+								'text-primary bg-linear-to-r from-primary/10 to-transparent font-medium before:absolute before:left-0 before:top-0 before:h-full before:w-0.75 before:bg-primary before:rounded-r-full'
+							:	'text-gray-500 hover:text-primary hover:bg-gray-50/50 dark:hover:bg-gray-800/30',
 						)}>
-						{t}
-						{table === t && database === globalActiveDatabase && (
-							<CornerDownLeftIcon size={18} />
+						<div className='flex items-center gap-3'>
+							<Table2Icon />
+
+							<span className='truncate'>{t}</span>
+						</div>
+
+						{/* Icon */}
+						{table === t && globalActiveDatabase === database && (
+							<CornerDownLeftIcon
+								size={16}
+								className='text-primary/70'
+							/>
 						)}
 					</div>
 				))

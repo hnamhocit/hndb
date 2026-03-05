@@ -5,11 +5,13 @@ export const datasourceSchema = z.enum([
 	'mysql',
 	'sqlite',
 	'sql-server',
+	'maria-db',
 ])
 
 export const ConnectionMethod = z.enum(['host', 'url'])
 
 const baseDataSourceSchema = z.object({
+	name: z.string().min(1, 'Name is required'),
 	type: datasourceSchema,
 	savePassword: z.boolean(),
 	showAllDatabases: z.boolean(),

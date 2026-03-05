@@ -27,7 +27,7 @@ const Data = () => {
 		setIsLoading(true)
 
 		try {
-			const { data } = await api.get(getTablePath('preview'))
+			const { data } = await api.get(tablePath + '/preview')
 
 			setResult(data.data)
 			discardTableChanges(tablePath)

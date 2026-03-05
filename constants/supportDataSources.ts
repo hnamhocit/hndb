@@ -7,7 +7,7 @@ export const supportDataSources = [
 	{
 		id: 'mysql',
 		name: 'MySQL',
-		photoURL: '/mysql.svg',
+		photoURL: '/mysql.png',
 	},
 	{
 		id: 'sqlite',
@@ -17,6 +17,11 @@ export const supportDataSources = [
 	{
 		id: 'sql-server',
 		name: 'SQL Server',
-		photoURL: '/sql-server.svg',
+		photoURL: '/sql-server.jpg',
 	},
-]
+	{
+		id: 'maria-db',
+		name: 'MariaDB',
+		photoURL: '/maria-db.svg',
+	},
+] as const

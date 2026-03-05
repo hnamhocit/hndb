@@ -4,15 +4,15 @@ import Image from 'next/image'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 
-import { supportDataSources } from '@/constants/supportDataSources'
-import { dataSourcesService } from '@/services'
-import { useDataSourcesStore, useUserStore } from '@/stores'
-import { notifyError } from '@/utils'
 import {
 	Accordion,
 	AccordionItem,
 	AccordionTrigger,
-} from '../../../../components/ui/accordion'
+} from '@/components/ui/accordion'
+import { supportDataSources } from '@/constants/supportDataSources'
+import { dataSourcesService } from '@/services'
+import { useDataSourcesStore, useUserStore } from '@/stores'
+import { notifyError } from '@/utils'
 import Databases from './Databases'
 
 const DataSources = () => {
@@ -70,7 +70,7 @@ const DataSources = () => {
 								/>
 
 								<span className='text-lg font-mono font-medium'>
-									{supportDataSource?.name || ds.type}
+									{ds.name || ds.type}
 								</span>
 							</div>
 						</AccordionTrigger>

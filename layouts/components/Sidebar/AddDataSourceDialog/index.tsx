@@ -1,9 +1,9 @@
 'use client'
 
-import { DataSourceFormData, dataSourceSchema } from '@/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { PlugIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { CheckCircle2Icon, ChevronLeftIcon, Loader2Icon } from 'lucide-react'
+import Image from 'next/image'
+import { ReactNode, useEffect, useState } from 'react'
 import {
 	Controller,
 	FieldErrors,
@@ -13,43 +13,47 @@ import {
 } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { supportDataSources } from '@/constants/supportDataSources'
-import { dataSourcesService } from '@/services'
-import { useDataSourcesStore, useUserStore } from '@/stores'
-import { AxiosError } from 'axios'
-import { Button } from '../../../../components/ui/button'
-import { Checkbox } from '../../../../components/ui/checkbox'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from '../../../../components/ui/dialog'
+} from '@/components/ui/dialog'
 import {
 	Field,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
 	FieldSet,
-} from '../../../../components/ui/field'
-import { Input } from '../../../../components/ui/input'
-import { Label } from '../../../../components/ui/label'
+} from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { api } from '@/config'
+import { supportDataSources } from '@/constants/supportDataSources'
 import {
-	RadioGroup,
-	RadioGroupItem,
-} from '../../../../components/ui/radio-group'
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '../../../../components/ui/select'
+	DataSourceFormData,
+	datasourceSchema,
+	dataSourceSchema,
+} from '@/schemas'
+import { dataSourcesService } from '@/services'
+import { useDataSourcesStore, useUserStore } from '@/stores'
+import { notifyError } from '@/utils'
+import z from 'zod'
 
-const AddDataSourceDialog = () => {
-	// 1. Quản lý trạng thái đóng/mở của Dialog
+interface AddDataSourceDialogProps {
+	children: ReactNode
+}
+
+const AddDataSourceDialog = ({ children }: AddDataSourceDialogProps) => {
 	const [isOpen, setIsOpen] = useState(false)
+	const [step, setStep] = useState<1 | 2>(1)
+
+	const [isTesting, setIsTesting] = useState(false)
+	const [isTestSuccessful, setIsTestSuccessful] = useState(false)
 
 	const {
 		handleSubmit,
@@ -57,9 +61,13 @@ const AddDataSourceDialog = () => {
 		formState: { errors, isSubmitting },
 		reset,
 		setValue,
+		getValues,
+		trigger,
+		watch,
 	} = useForm<DataSourceFormData>({
 		resolver: zodResolver(dataSourceSchema),
 		defaultValues: {
+			name: '', // <-- THÊM MỚI: Default value cho name
 			type: 'postgresql',
 			method: 'host',
 			host: 'localhost',
@@ -89,19 +97,63 @@ const AddDataSourceDialog = () => {
 		if (dbType === 'postgresql') {
 			setValue('port', 5432)
 			setValue('username', 'postgres')
-		} else if (dbType === 'mysql') {
+		} else if (dbType === 'mysql' || dbType === 'maria-db') {
 			setValue('port', 3306)
 			setValue('username', 'root')
 		} else if (dbType === 'sql-server') {
 			setValue('port', 1433)
 			setValue('username', 'sa')
 		} else if (dbType === 'sqlite') {
-			// SQLite không cần Port và Username
 			setValue('port', undefined)
 			setValue('username', undefined)
 			setValue('method', 'host')
 		}
 	}, [dbType, setValue])
+
+	useEffect(() => {
+		const subscription = watch(() => {
+			if (isTestSuccessful) {
+				setIsTestSuccessful(false)
+			}
+		})
+		return () => subscription.unsubscribe()
+	}, [watch, isTestSuccessful])
+
+	const handleOpenChange = (open: boolean) => {
+		setIsOpen(open)
+		if (!open) {
+			setTimeout(() => {
+				setStep(1)
+				reset()
+				setIsTestSuccessful(false)
+			}, 300)
+		}
+	}
+
+	const handleSelectDatabase = (type: z.infer<typeof datasourceSchema>) => {
+		setValue('type', type)
+		setIsTestSuccessful(false)
+		setStep(2)
+	}
+
+	const handleTestConnection = async () => {
+		const isValid = await trigger()
+		if (!isValid) return
+
+		setIsTesting(true)
+		setIsTestSuccessful(false)
+
+		try {
+			const formData = getValues()
+			await api.post('/data_sources/test-connection', formData)
+			setIsTestSuccessful(true)
+			toast.success('Connection successful!', { position: 'top-center' })
+		} catch (error) {
+			notifyError(error, 'Connection failed. Please check your config.')
+		} finally {
+			setIsTesting(false)
+		}
+	}
 
 	const onSubmit: SubmitHandler<DataSourceFormData> = async (formData) => {
 		try {
@@ -112,361 +164,416 @@ const AddDataSourceDialog = () => {
 
 			setDatasources([...datasources, data.data])
 			reset()
-			setIsOpen(false) // 4. Đóng Dialog ngay khi gọi API thành công
+			setIsOpen(false)
 			toast.success('Data source added successfully!', {
 				position: 'top-center',
 			})
 		} catch (error) {
-			if (error instanceof AxiosError) {
-				if ('error' in error.response?.data) {
-					toast.error(error.response?.data.error, {
-						position: 'top-center',
-					})
-				}
-
-				return
-			}
-
-			toast.error('Failed to add data source.', {
-				position: 'top-center',
-			})
+			notifyError(error, 'Failed to add data source.')
 		}
 	}
+
+	const selectedDbInfo = supportDataSources.find((ds) => ds.id === dbType)
 
 	return (
 		<Dialog
 			open={isOpen}
-			onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				<Button
-					size='icon'
-					variant='outline'>
-					<PlugIcon />
-				</Button>
-			</DialogTrigger>
+			onOpenChange={handleOpenChange}>
+			<DialogTrigger asChild>{children}</DialogTrigger>
 
-			<DialogContent>
+			<DialogContent className='max-w-md'>
 				<DialogHeader>
-					<DialogTitle>Add Data Source</DialogTitle>
+					<DialogTitle className='flex items-center gap-2'>
+						{step === 2 && (
+							<button
+								title='go back'
+								onClick={() => setStep(1)}
+								className='p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors'>
+								<ChevronLeftIcon size={20} />
+							</button>
+						)}
+						{step === 1 ?
+							'Select Data Source'
+						:	`Configure ${selectedDbInfo?.name || 'Database'}`}
+					</DialogTitle>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit(onSubmit)}>
-					<FieldSet>
-						{dbType !== 'sqlite' && (
-							<div className='text-indigo-500 font-semibold font-mono'>
-								Server
-							</div>
-						)}
-
-						<FieldGroup>
-							<Field orientation='horizontal'>
-								<FieldLabel>Data Source Type</FieldLabel>
-
-								<Controller
-									control={control}
-									name='type'
-									render={({
-										field: { value, onChange },
-									}) => (
-										<Select
-											value={value}
-											onValueChange={onChange}>
-											<SelectTrigger>
-												<SelectValue placeholder='Select a data source' />
-											</SelectTrigger>
-											<SelectContent>
-												{supportDataSources.map(
-													(ds) => (
-														<SelectItem
-															key={ds.id}
-															value={ds.id}>
-															{ds.name}
-														</SelectItem>
-													),
-												)}
-											</SelectContent>
-										</Select>
-									)}
+				{step === 1 && (
+					<div className='grid grid-cols-2 gap-4 py-4'>
+						{supportDataSources.map((ds) => (
+							<button
+								key={ds.id}
+								onClick={() => handleSelectDatabase(ds.id)}
+								className='flex flex-col items-center justify-center p-6 gap-3 border rounded-xl hover:border-primary hover:bg-primary/5 hover:text-primary transition-all duration-200 group'>
+								<Image
+									src={
+										ds.photoURL || '/default-datasource.png'
+									}
+									alt={ds.name}
+									width={40}
+									height={40}
+									className='group-hover:scale-110 transition-transform duration-200'
 								/>
-							</Field>
+								<span className='font-mono font-medium text-sm text-gray-600 dark:text-gray-300 group-hover:text-primary'>
+									{ds.name}
+								</span>
+							</button>
+						))}
+					</div>
+				)}
 
-							{/* Ẩn chọn Method nếu là SQLite */}
-							{dbType !== 'sqlite' && (
-								<Field orientation='horizontal'>
-									<FieldLabel>Connected by</FieldLabel>
-
-									<Controller
-										control={control}
-										name='method'
-										render={({
-											field: { value, onChange },
-										}) => (
-											<RadioGroup
-												value={value}
-												onValueChange={onChange}
-												orientation='horizontal'>
-												<div className='flex items-center gap-3'>
-													<RadioGroupItem
-														value='host'
-														id='host'
-													/>
-													<Label htmlFor='host'>
-														Host
-													</Label>
-												</div>
-
-												<div className='flex items-center gap-3'>
-													<RadioGroupItem
-														value='url'
-														id='url'
-													/>
-													<Label htmlFor='url'>
-														URL
-													</Label>
-												</div>
-											</RadioGroup>
-										)}
-									/>
-								</Field>
-							)}
-
-							{method === 'url' && dbType !== 'sqlite' && (
+				{step === 2 && (
+					<form
+						onSubmit={handleSubmit(onSubmit)}
+						className='animate-in fade-in slide-in-from-right-4 duration-300'>
+						<FieldSet>
+							{/* --- BẮT ĐẦU: TRƯỜNG CONNECTION NAME --- */}
+							<FieldGroup className='mb-4'>
 								<div className='space-y-2'>
 									<Field orientation='horizontal'>
-										<FieldLabel>URL</FieldLabel>
+										<FieldLabel>Name</FieldLabel>
 										<Controller
 											control={control}
-											name='url'
+											name='name'
 											render={({ field }) => (
 												<Input
 													{...field}
 													type='text'
-													placeholder='e.g. postgres://user:pass@localhost:5432/db'
+													placeholder='e.g. My Production DB'
+													value={field.value || ''}
 												/>
 											)}
 										/>
 									</Field>
-									{urlErrors.url && (
+									{errors.name && (
 										<FieldError>
-											{urlErrors.url?.message}
+											{errors.name.message as string}
 										</FieldError>
 									)}
 								</div>
-							)}
+							</FieldGroup>
+							{/* --- KẾT THÚC: TRƯỜNG CONNECTION NAME --- */}
 
-							{method === 'host' && (
-								<div className='space-y-2'>
-									{/* Ẩn Host/Port đối với SQLite */}
-									{dbType !== 'sqlite' && (
-										<Field orientation='horizontal'>
-											<FieldLabel>Host</FieldLabel>
-											<Controller
-												control={control}
-												name='host'
-												render={({ field }) => (
-													<Input
-														{...field}
-														type='text'
-														placeholder='e.g. localhost'
-														value={
-															field.value || ''
-														}
-													/>
-												)}
-											/>
-
-											<FieldLabel>Port</FieldLabel>
-											<Controller
-												control={control}
-												name='port'
-												render={({ field }) => (
-													<Input
-														{...field}
-														type='number' // 5. Chuyển sang number
-														placeholder='e.g. 5432'
-														className='max-w-24'
-														value={
-															field.value || ''
-														}
-														// 6. Ép kiểu an toàn từ Chuỗi sang Số
-														onChange={(e) =>
-															field.onChange(
-																parseInt(
-																	e.target
-																		.value,
-																	10,
-																) || undefined,
-															)
-														}
-													/>
-												)}
-											/>
-										</Field>
-									)}
-
-									{hostErrors.host && (
-										<FieldError>
-											{hostErrors.host?.message}
-										</FieldError>
-									)}
-									{hostErrors.port && (
-										<FieldError>
-											{hostErrors.port?.message}
-										</FieldError>
-									)}
-								</div>
-							)}
-
-							<div className='space-y-2'>
-								<Field orientation='horizontal'>
-									{method === 'host' && (
-										<>
-											<FieldLabel>
-												{dbType === 'sqlite' ?
-													'File Path'
-												:	'Database'}
-											</FieldLabel>
-											<Controller
-												control={control}
-												name='database_name'
-												render={({ field }) => (
-													<Input
-														{...field}
-														type='text'
-														placeholder={
-															(
-																dbType ===
-																'sqlite'
-															) ?
-																'e.g. ./data.sqlite'
-															:	'e.g. my_database'
-														}
-														value={
-															field.value || ''
-														}
-													/>
-												)}
-											/>
-										</>
-									)}
-
-									{/* Ẩn nút Show all databases cho SQLite */}
-									{dbType !== 'sqlite' && (
-										<>
-											<Controller
-												control={control}
-												name='showAllDatabases'
-												render={({ field }) => (
-													<Checkbox
-														id='show-all-databases'
-														checked={field.value}
-														onCheckedChange={
-															field.onChange
-														}
-													/>
-												)}
-											/>
-											<FieldLabel htmlFor='show-all-databases'>
-												Show all databases
-											</FieldLabel>
-										</>
-									)}
-								</Field>
-
-								{hostErrors?.database_name && (
-									<FieldError>
-										{hostErrors?.database_name?.message}
-									</FieldError>
-								)}
-							</div>
-						</FieldGroup>
-
-						{/* 7. Ẩn toàn bộ khu vực Authentication nếu là SQLite */}
-						{dbType !== 'sqlite' && (
-							<>
+							{dbType !== 'sqlite' && (
 								<div className='text-indigo-500 font-semibold font-mono'>
-									Authentication
+									Server
 								</div>
+							)}
 
-								<FieldGroup>
+							<FieldGroup>
+								{dbType !== 'sqlite' && (
+									<Field orientation='horizontal'>
+										<FieldLabel>Connected by</FieldLabel>
+
+										<Controller
+											control={control}
+											name='method'
+											render={({
+												field: { value, onChange },
+											}) => (
+												<RadioGroup
+													value={value}
+													onValueChange={onChange}
+													orientation='horizontal'>
+													<div className='flex items-center gap-3'>
+														<RadioGroupItem
+															value='host'
+															id='host'
+														/>
+														<Label htmlFor='host'>
+															Host
+														</Label>
+													</div>
+
+													<div className='flex items-center gap-3'>
+														<RadioGroupItem
+															value='url'
+															id='url'
+														/>
+														<Label htmlFor='url'>
+															URL
+														</Label>
+													</div>
+												</RadioGroup>
+											)}
+										/>
+									</Field>
+								)}
+
+								{method === 'url' && dbType !== 'sqlite' && (
 									<div className='space-y-2'>
 										<Field orientation='horizontal'>
-											<FieldLabel>Username</FieldLabel>
+											<FieldLabel>URL</FieldLabel>
 											<Controller
 												control={control}
-												name='username'
+												name='url'
 												render={({ field }) => (
 													<Input
 														{...field}
 														type='text'
-														placeholder='e.g. admin'
-														value={
-															field.value || ''
-														}
+														placeholder='e.g. postgres://user:pass@localhost:5432/db'
 													/>
 												)}
 											/>
 										</Field>
-										{errors.username && (
+										{urlErrors.url && (
 											<FieldError>
-												{errors.username?.message}
+												{urlErrors.url?.message}
 											</FieldError>
 										)}
 									</div>
+								)}
 
+								{method === 'host' && (
 									<div className='space-y-2'>
-										<Field orientation='horizontal'>
-											<FieldLabel>Password</FieldLabel>
-											<Controller
-												control={control}
-												name='password'
-												render={({ field }) => (
-													<Input
-														{...field}
-														type='password'
-														placeholder='Enter your password'
-														value={
-															field.value || ''
-														}
-													/>
-												)}
-											/>
+										{dbType !== 'sqlite' && (
+											<Field orientation='horizontal'>
+												<FieldLabel>Host</FieldLabel>
+												<Controller
+													control={control}
+													name='host'
+													render={({ field }) => (
+														<Input
+															{...field}
+															type='text'
+															placeholder='e.g. localhost'
+															value={
+																field.value ||
+																''
+															}
+														/>
+													)}
+												/>
 
-											<Controller
-												control={control}
-												name='savePassword'
-												render={({ field }) => (
-													<Checkbox
-														id='save-password'
-														checked={field.value}
-														onCheckedChange={
-															field.onChange
-														}
-													/>
-												)}
-											/>
-											<FieldLabel htmlFor='save-password'>
-												Save password
-											</FieldLabel>
-										</Field>
-										{errors.password && (
+												<FieldLabel>Port</FieldLabel>
+												<Controller
+													control={control}
+													name='port'
+													render={({ field }) => (
+														<Input
+															{...field}
+															type='number'
+															placeholder='e.g. 5432'
+															className='max-w-24'
+															value={
+																field.value ||
+																''
+															}
+															onChange={(e) =>
+																field.onChange(
+																	parseInt(
+																		e.target
+																			.value,
+																		10,
+																	) ||
+																		undefined,
+																)
+															}
+														/>
+													)}
+												/>
+											</Field>
+										)}
+
+										{hostErrors.host && (
 											<FieldError>
-												{errors.password?.message}
+												{hostErrors.host?.message}
+											</FieldError>
+										)}
+										{hostErrors.port && (
+											<FieldError>
+												{hostErrors.port?.message}
 											</FieldError>
 										)}
 									</div>
-								</FieldGroup>
-							</>
-						)}
+								)}
 
-						<Button
-							type='submit'
-							disabled={isSubmitting}
-							className='mt-4'>
-							Connect
-						</Button>
-					</FieldSet>
-				</form>
+								<div className='space-y-2'>
+									<Field orientation='horizontal'>
+										{method === 'host' && (
+											<>
+												<FieldLabel>
+													{dbType === 'sqlite' ?
+														'File Path'
+													:	'Database'}
+												</FieldLabel>
+												<Controller
+													control={control}
+													name='database_name'
+													render={({ field }) => (
+														<Input
+															{...field}
+															type='text'
+															placeholder={
+																(
+																	dbType ===
+																	'sqlite'
+																) ?
+																	'e.g. ./data.sqlite'
+																:	'e.g. my_database'
+															}
+															value={
+																field.value ||
+																''
+															}
+														/>
+													)}
+												/>
+											</>
+										)}
+
+										{dbType !== 'sqlite' && (
+											<>
+												<Controller
+													control={control}
+													name='showAllDatabases'
+													render={({ field }) => (
+														<Checkbox
+															id='show-all-databases'
+															checked={
+																field.value
+															}
+															onCheckedChange={
+																field.onChange
+															}
+														/>
+													)}
+												/>
+												<FieldLabel htmlFor='show-all-databases'>
+													Show all databases
+												</FieldLabel>
+											</>
+										)}
+									</Field>
+
+									{hostErrors?.database_name && (
+										<FieldError>
+											{hostErrors?.database_name?.message}
+										</FieldError>
+									)}
+								</div>
+							</FieldGroup>
+
+							{dbType !== 'sqlite' && (
+								<>
+									<div className='text-indigo-500 font-semibold font-mono'>
+										Authentication
+									</div>
+
+									<FieldGroup>
+										<div className='space-y-2'>
+											<Field orientation='horizontal'>
+												<FieldLabel>
+													Username
+												</FieldLabel>
+												<Controller
+													control={control}
+													name='username'
+													render={({ field }) => (
+														<Input
+															{...field}
+															type='text'
+															placeholder='e.g. admin'
+															value={
+																field.value ||
+																''
+															}
+														/>
+													)}
+												/>
+											</Field>
+											{errors.username && (
+												<FieldError>
+													{errors.username?.message}
+												</FieldError>
+											)}
+										</div>
+
+										<div className='space-y-2'>
+											<Field orientation='horizontal'>
+												<FieldLabel>
+													Password
+												</FieldLabel>
+												<Controller
+													control={control}
+													name='password'
+													render={({ field }) => (
+														<Input
+															{...field}
+															type='password'
+															placeholder='Enter your password'
+															value={
+																field.value ||
+																''
+															}
+														/>
+													)}
+												/>
+
+												<Controller
+													control={control}
+													name='savePassword'
+													render={({ field }) => (
+														<Checkbox
+															id='save-password'
+															checked={
+																field.value
+															}
+															onCheckedChange={
+																field.onChange
+															}
+														/>
+													)}
+												/>
+												<FieldLabel htmlFor='save-password'>
+													Save password
+												</FieldLabel>
+											</Field>
+											{errors.password && (
+												<FieldError>
+													{errors.password?.message}
+												</FieldError>
+											)}
+										</div>
+									</FieldGroup>
+								</>
+							)}
+
+							<div className='flex justify-end gap-3 pt-4 border-t mt-4'>
+								<Button
+									variant='outline'
+									type='button'
+									onClick={handleTestConnection}
+									disabled={isTesting}
+									className={
+										isTestSuccessful ?
+											'border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700'
+										:	''
+									}>
+									{isTesting ?
+										<>
+											<Loader2Icon className='mr-2 h-4 w-4 animate-spin' />{' '}
+											Testing...
+										</>
+									: isTestSuccessful ?
+										<>
+											<CheckCircle2Icon className='mr-2 h-4 w-4' />{' '}
+											Tested OK
+										</>
+									:	'Test connection'}
+								</Button>
+
+								<Button
+									type='submit'
+									disabled={
+										!isTestSuccessful || isSubmitting
+									}>
+									Connect
+								</Button>
+							</div>
+						</FieldSet>
+					</form>
+				)}
 			</DialogContent>
 		</Dialog>
 	)
