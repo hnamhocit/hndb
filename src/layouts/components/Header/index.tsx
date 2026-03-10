@@ -116,7 +116,7 @@ const Header = () => {
 					</Link>
 				</motion.div>
 
-				<div className='text-xl font-bold'>HN Studio</div>
+				<div className='text-xl font-bold'>HNDB</div>
 
 				<div className='hidden md:flex items-center gap-1 ml-2'>
 					<motion.div whileHover={{ y: -1 }}>

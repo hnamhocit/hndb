@@ -65,7 +65,7 @@ const DataSources = () => {
 
 	useEffect(() => {
 		const sse = new EventSource(
-			`http://localhost:8080/api/data_sources/stream-status`,
+			`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'}/data_sources/stream-status`,
 		)
 
 		sse.onmessage = (event) => {

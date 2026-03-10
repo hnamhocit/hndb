@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2Icon, ChevronLeftIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import {
 	Controller,
 	FieldErrors,
@@ -71,6 +71,7 @@ const DataSourceDialog = ({
 }: DataSourceDialogProps) => {
 	const [internalIsOpen, setInternalIsOpen] = useState(false)
 	const isDialogOpen = open !== undefined ? open : internalIsOpen
+	const initializedForOpenRef = useRef(false)
 
 	const [step, setStep] = useState<1 | 2>(1)
 	const [isTesting, setIsTesting] = useState(false)
@@ -107,39 +108,45 @@ const DataSourceDialog = ({
 
 	// Cập nhật form data khi mở dialog
 	useEffect(() => {
-		if (isDialogOpen) {
-			if (isEditMode) {
-				const existingDs = datasources.find(
-					(ds) => ds.id === dataSourceId,
-				)
-				if (existingDs) {
-					// Trải phẳng dữ liệu từ config ra để reset vào form
-					const formDataToReset: DataSourceFormData = {
-						name: existingDs.name,
-						type: existingDs.type as z.infer<
-							typeof datasourceSchema
-						>,
-						method: existingDs.config.method || 'host',
-						host: existingDs.config.host || '',
-						port: existingDs.config.port,
-						database_name: existingDs.config.database_name || '',
-						savePassword: existingDs.config.savePassword ?? true,
-						showAllDatabases:
-							existingDs.config.showAllDatabases ?? true,
-						username: existingDs.config.username || '',
-						password: existingDs.config.password || '', // Mật khẩu có thể rỗng nếu user chọn không lưu
-						url: existingDs.config.url || '',
-					}
-
-					reset(formDataToReset)
-					setStep(2)
-				}
-			} else {
-				reset(DEFAULT_FORM_VALUES)
-				setStep(1)
-			}
-			setIsTestSuccessful(false)
+		if (!isDialogOpen) {
+			initializedForOpenRef.current = false
+			return
 		}
+
+		if (initializedForOpenRef.current) {
+			return
+		}
+
+		if (isEditMode) {
+			const existingDs = datasources.find((ds) => ds.id === dataSourceId)
+			if (!existingDs) {
+				return
+			}
+
+			// Trải phẳng dữ liệu từ config ra để reset vào form
+			const formDataToReset: DataSourceFormData = {
+				name: existingDs.name,
+				type: existingDs.type as z.infer<typeof datasourceSchema>,
+				method: existingDs.config.method || 'host',
+				host: existingDs.config.host || '',
+				port: existingDs.config.port,
+				database_name: existingDs.config.database_name || '',
+				savePassword: existingDs.config.savePassword ?? true,
+				showAllDatabases: existingDs.config.showAllDatabases ?? true,
+				username: existingDs.config.username || '',
+				password: existingDs.config.password || '', // Mật khẩu có thể rỗng nếu user chọn không lưu
+				url: existingDs.config.url || '',
+			}
+
+			reset(formDataToReset)
+			setStep(2)
+		} else {
+			reset(DEFAULT_FORM_VALUES)
+			setStep(1)
+		}
+
+		setIsTestSuccessful(false)
+		initializedForOpenRef.current = true
 	}, [isDialogOpen, isEditMode, dataSourceId, datasources, reset])
 
 	// Cập nhật giá trị mặc định khi đổi loại Database (Chỉ áp dụng khi ở Add Mode)
@@ -226,17 +233,18 @@ const DataSourceDialog = ({
 
 				// Cập nhật lại store: Gói các trường connection vào object config
 				setDatasources(
-					datasources.map((ds) => {
-						if (ds.id === dataSourceId) {
-							const { name, type, ...configData } = formData
-							return {
-								...ds,
-								name,
-								config: {
-									...ds.config,
-									...configData,
-								},
-							}
+						datasources.map((ds) => {
+							if (ds.id === dataSourceId) {
+								const { name, type, ...configData } = formData
+								return {
+									...ds,
+									name,
+									type,
+									config: {
+										...ds.config,
+										...configData,
+									},
+								}
 						}
 						return ds
 					}),
