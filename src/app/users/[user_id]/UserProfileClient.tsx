@@ -89,7 +89,7 @@ export default function UserProfileClient({ userId }: UserProfileClientProps) {
 
 	const displayName = user?.name?.trim() || `Engineer ${shortId}`
 	const displayEmail = user?.email?.trim() || `@${safeUserId}`
-	const avatarSrc = user?.photo_url || '/default-user.jpg'
+	const avatarSrc = user?.photo_url || '/resources/default-user.jpg'
 
 	const authoredBlogCount = useMemo(() => {
 		return blogPosts.filter((post) => post.authorId === safeUserId).length

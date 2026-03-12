@@ -79,7 +79,7 @@ const BetaAnnouncementModal = () => {
 							aria-label='Contact via Gmail'
 							title='Contact via Gmail'>
 							<Image
-								src='/google.svg'
+								src='/providers/google.svg'
 								alt='Gmail'
 								width={18}
 								height={18}
@@ -98,7 +98,7 @@ const BetaAnnouncementModal = () => {
 							aria-label='Contact via Facebook'
 							title='Contact via Facebook'>
 							<Image
-								src='/facebook.png'
+								src='/providers/facebook.png'
 								alt='Facebook'
 								width={18}
 								height={18}

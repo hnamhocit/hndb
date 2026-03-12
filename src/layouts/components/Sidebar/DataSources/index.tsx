@@ -103,7 +103,7 @@ const DataSources = () => {
 										<Image
 											src={
 												supportDataSource?.photoURL ||
-												'/default-datasource.png'
+												'/logo.png'
 											}
 											alt={`${supportDataSource?.name} Logo`}
 											width={28}

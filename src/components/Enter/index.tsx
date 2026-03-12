@@ -87,7 +87,7 @@ export default function Enter() {
 							variant='outline'
 							onClick={() => signInWithProvider('google')}>
 							<Image
-								src='/google.svg'
+								src='/providers/google.svg'
 								width={16}
 								height={16}
 								alt='Google Logo'
@@ -100,7 +100,7 @@ export default function Enter() {
 							variant='outline'
 							onClick={() => signInWithProvider('github')}>
 							<Image
-								src='/github.png'
+								src='/providers/github.png'
 								width={16}
 								height={16}
 								alt='GitHub Logo'

@@ -200,7 +200,10 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
 						<motion.div whileHover={{ scale: 1.04 }}>
 							<Avatar>
 								<AvatarImage
-									src={user?.photo_url || '/default-user.jpg'}
+									src={
+										user?.photo_url ||
+										'/resources/default-user.jpg'
+									}
 								/>
 								<AvatarFallback>
 									{user?.name

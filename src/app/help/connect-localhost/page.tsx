@@ -4,7 +4,6 @@ import {
 	ExternalLinkIcon,
 	InfoIcon,
 } from 'lucide-react'
-import Image from 'next/image'
 import Link from 'next/link'
 
 interface ConnectLocalhostPageProps {
@@ -28,16 +27,16 @@ const SOURCE_PORT_CONFIG: Record<
 }
 
 export const metadata: Metadata = {
-	title: 'Connect Localhost with ngrok',
+	title: 'Connect Localhost with localtunnel',
 	description:
-		'Guide for connecting local databases to HNDB using ngrok tunnel.',
+		'Guide for connecting local databases to HNDB using localtunnel.',
 	alternates: {
 		canonical: '/help/connect-localhost',
 	},
 	openGraph: {
-		title: 'Connect Localhost with ngrok | HNDB',
+		title: 'Connect Localhost with localtunnel | HNDB',
 		description:
-			'Step-by-step guide for exposing localhost database and connecting it to HNDB.',
+			'Step-by-step guide for exposing localhost database with localtunnel and connecting it to HNDB.',
 		url: '/help/connect-localhost',
 		type: 'article',
 	},
@@ -49,6 +48,7 @@ export default async function ConnectLocalhostPage({
 	const params = await searchParams
 	const sourceKey = (params.source || '').toLowerCase()
 	const sourcePortConfig = SOURCE_PORT_CONFIG[sourceKey]
+	const sourceName = sourcePortConfig?.label || params.name || 'your database'
 	const sourcePort = sourcePortConfig?.port
 
 	return (
@@ -66,70 +66,83 @@ export default async function ConnectLocalhostPage({
 						Localhost Guide
 					</p>
 					<h1 className='mt-2 text-2xl md:text-3xl font-bold tracking-tight'>
-						How to connect localhost using ngrok
+						How to connect localhost using localtunnel
 					</h1>
+					<p className='mt-2 text-sm text-muted-foreground'>
+						Quick setup for {sourceName} from your local machine to
+						HNDB.
+					</p>
 				</div>
 
 				<div className='rounded-xl border p-5 md:p-6 space-y-4'>
 					<div className='text-base font-semibold'>
-						1. Open ngrok website and login/register
+						1. Download the setup script
 					</div>
-					<p className='text-sm text-muted-foreground'>
-						Go to{' '}
+					<div className='flex flex-col sm:flex-row gap-3'>
 						<a
-							href='https://ngrok.com/'
-							target='_blank'
-							rel='noreferrer'
-							className='inline-flex items-center gap-1 text-primary hover:underline'>
-							https://ngrok.com/
-							<ExternalLinkIcon size={12} />
-						</a>{' '}
-						, then sign in or create a new account.
-					</p>
-
-					<div className='text-base font-semibold'>
-						2. In dashboard, open install section
-					</div>
-					<div className='rounded-lg border overflow-hidden'>
-						<Image
-							src='/ngrok-install.png'
-							alt='ngrok install dashboard'
-							width={1400}
-							height={760}
-							className='w-full h-auto object-cover'
-						/>
+							href='/resources/setup.sh'
+							download='setup.sh'
+							className='inline-flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent transition-colors'>
+							Download setup.sh (macOS/Linux)
+						</a>
+						<a
+							href='/resources/setup.bat'
+							download='setup.bat'
+							className='inline-flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent transition-colors'>
+							Download setup.bat (Windows)
+						</a>
 					</div>
 					<p className='text-sm text-muted-foreground'>
-						Choose your operating system (macOS, Linux, Windows),
-						then copy the install command shown by ngrok dashboard.
+						These scripts scan common DB ports, install
+						<code>localtunnel</code> if needed, then open a tunnel
+						for the selected port.
 					</p>
 
 					<div className='text-base font-semibold'>
-						3. Follow install/connect instructions
+						2. Run the script
 					</div>
-					<div className='rounded-lg border overflow-hidden'>
-						<Image
-							src='/ngrok-connect.png'
-							alt='ngrok connect instructions'
-							width={1400}
-							height={760}
-							className='w-full h-auto object-cover'
-						/>
+					<div className='space-y-3'>
+						<div className='text-sm font-medium'>macOS / Linux</div>
+						<div className='rounded-lg border bg-black text-slate-100 p-4 text-sm font-mono overflow-auto'>
+							<div>$ chmod +x ./setup.sh</div>
+							<div>$ ./setup.sh</div>
+						</div>
+						<div className='text-sm font-medium'>Windows</div>
+						<div className='rounded-lg border bg-black text-slate-100 p-4 text-sm font-mono overflow-auto'>
+							<div>{'>'} setup.bat</div>
+						</div>
 					</div>
 					<p className='text-sm text-muted-foreground'>
-						Run the provided commands in terminal to install ngrok,
-						add your auth token, then start tunnel for your DB port.
+						When asked, choose your DB port.
+						{sourcePort ?
+							` ${sourceName} usually uses port ${sourcePort}.`
+						:	' If your DB is not listed, choose Custom port.'}
 					</p>
 
 					<div className='text-base font-semibold'>
-						4. Open tunnel for your local DB
+						3. Copy tunnel host from terminal output
 					</div>
 					<div className='rounded-lg border bg-black text-slate-100 p-4 text-sm font-mono overflow-auto'>
-						<div>$ ngrok http 3306</div>
+						<div>$ lt --port {sourcePort ?? '<port>'}</div>
+						<div>your url is: https://random-name.loca.lt</div>
 					</div>
 					<p className='text-sm text-muted-foreground'>
-						If you are not using MySQL/MariaDB, replace `3306` with
-						your actual local database port.
+						Use the generated host in your HNDB data source config,
+						and keep this terminal window open while connecting.
+					</p>
+
+					<div className='text-base font-semibold'>
+						4. Configure your data source in HNDB
+					</div>
+					<ul className='space-y-2 text-sm text-muted-foreground list-disc pl-5'>
+						<li>Open Add Data Source and choose your database.</li>
+						<li>Set host to your `*.loca.lt` tunnel hostname.</li>
+						<li>Set port to the port requested by your tunnel.</li>
+						<li>Use your existing local DB username/password.</li>
+					</ul>
+					<p className='text-xs text-muted-foreground'>
+						If your connection fails, rerun the script and verify the
+						database service is running before testing again.
 					</p>
 				</div>
 
@@ -155,8 +168,8 @@ export default async function ConnectLocalhostPage({
 							VPS cannot dial in directly.
 						</li>
 						<li>
-							ngrok creates a secure public tunnel, then forwards
-							traffic back to your local DB port.
+							localtunnel creates a public tunnel endpoint, then
+							forwards traffic back to your local machine.
 						</li>
 					</ul>
 				</div>

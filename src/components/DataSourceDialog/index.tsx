@@ -213,7 +213,7 @@ const DataSourceDialog = ({
 	const handleTestConnection = async () => {
 		if (isBlockedLocalHost) {
 			toast.error(
-				'Localhost is blocked. Use ngrok host URL to continue.',
+				'Localhost is blocked. Use localtunnel host URL to continue.',
 				{ position: 'top-center' },
 			)
 			return
@@ -242,7 +242,7 @@ const DataSourceDialog = ({
 	const onSubmit: SubmitHandler<DataSourceFormData> = async (formData) => {
 		if (isBlockedLocalHost) {
 			toast.error(
-				'Cannot continue with localhost. Please use ngrok tunnel host.',
+				'Cannot continue with localhost. Please use localtunnel host.',
 				{ position: 'top-center' },
 			)
 			return
@@ -346,12 +346,12 @@ const DataSourceDialog = ({
 									)
 								}
 								className='flex flex-col items-center justify-center p-6 gap-3 border rounded-xl hover:border-primary hover:bg-primary/5 hover:text-primary transition-all duration-200 group'>
-								<Image
-									src={
-										ds.photoURL || '/default-datasource.png'
-									}
-									alt={ds.name}
-									width={40}
+									<Image
+										src={
+											ds.photoURL || '/logo.png'
+										}
+										alt={ds.name}
+										width={40}
 									height={40}
 									className='group-hover:scale-110 transition-transform duration-200'
 								/>
@@ -535,13 +535,13 @@ const DataSourceDialog = ({
 															Localhost is not
 															allowed
 														</div>
-														<div className='mt-1'>
-															When API runs on VPS,
-															`localhost` points to
-															the VPS itself. Please
-															use ngrok tunnel host
-															to continue.
-														</div>
+															<div className='mt-1'>
+																When API runs on VPS,
+																`localhost` points to
+																the VPS itself. Please
+																use localtunnel host
+																to continue.
+															</div>
 														<div className='mt-2'>
 															<Link
 																href={{
@@ -555,12 +555,12 @@ const DataSourceDialog = ({
 																	},
 																}}
 																className='inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-100/80 dark:bg-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-500/30 transition-colors'>
-																How to connect
-																localhost
-																(ngrok)
-																<ExternalLinkIcon
-																	size={12}
-																/>
+																	How to connect
+																	localhost
+																	(localtunnel)
+																	<ExternalLinkIcon
+																		size={12}
+																	/>
 															</Link>
 														</div>
 													</div>

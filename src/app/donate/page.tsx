@@ -89,7 +89,7 @@ export default function DonatePage() {
 					<div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
 						<div className='overflow-hidden rounded-2xl border bg-muted/20'>
 							<Image
-								src='/qr-1.jpeg'
+								src='/resources/qr-1.jpeg'
 								alt='Donation QR 1'
 								width={720}
 								height={720}
@@ -99,7 +99,7 @@ export default function DonatePage() {
 
 						<div className='overflow-hidden rounded-2xl border bg-muted/20'>
 							<Image
-								src='/qr-2.jpeg'
+								src='/resources/qr-2.jpeg'
 								alt='Donation QR 2'
 								width={720}
 								height={720}
